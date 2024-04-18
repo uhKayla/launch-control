@@ -1,9 +1,13 @@
 <script lang="ts">
-    import { serverAddress, securityToken } from '$lib/persistent-store';
+    import { serverAddress, securityToken, serverConfig } from '$lib/persistent-store';
+    import type { ServerConfig } from '$lib/types';
     import type { Writable } from 'svelte/store';
 
     let address: string = '';
     let token: string = '';
+    let errorMessage: string = '';  // Error message state
+    let loading: boolean = false;
+    let success: boolean = false;
 
     const addressStore: Writable<string> = serverAddress;
     const tokenStore: Writable<string> = securityToken;
@@ -15,38 +19,78 @@
         event.preventDefault();
         addressStore.set(address);
         tokenStore.set(token);
+        errorMessage = '';  // reset error message on new submission
+        loading = true; // begin loading
 
         try {
             const response = await fetch(address + "/api/v1/server/settings", {
-                method: 'GET', // or 'POST' depending on your requirements
+                method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
 
-            const data = await response.json();
-            console.log('API Response:', data); // Logging the data
+            if (!response.ok) {
+                throw new Error('Failed to fetch server settings. Please check your server address and token. (' + response.status + ")");
+            }
 
-            // Optionally, handle the data in the UI or perform further actions
-        } catch (error) {
+            const data: ServerConfig = await response.json();
+            serverConfig.set(data);
+            success = true;
+        }
+        catch (error: any) {
             console.error('Error making API request:', error);
-            // Optionally, handle errors in the UI
+            errorMessage = error.message || 'An unexpected error occurred.';
+        }
+        finally {
+            loading = false;
         }
     }
 </script>
 
+<div>
+    {#if errorMessage}
+        <div class="p4">
+            <aside class="alert transition:fade|local={{ duration: 200 }} bg-primary-500">
+                <!-- Icon -->
+                <div>
+                    <i class="fas fa-warning" />
+                </div>
+                <!-- Message -->
+                <div class="alert-message">
+                    <h3 class="h3">Error!</h3>
+                    <p>{errorMessage}</p>
+                </div>
+            </aside>
+        </div>
+    {/if}
+</div>
 <div class="p-4">
     <form class="max-w-sm mx-auto" on:submit="{handleSubmit}">
         <div class="mb-5">
-            <label for="address" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Server Address</label>
-            <input type="text" id="address" bind:value="{address}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="http://localhost:8080" required />
+            <label class="label">
+                <span>Server Address</span>
+                <input class="input" type="text" bind:value={address} placeholder="http://localhost" />
+            </label>
         </div>
         <div class="mb-5">
-            <label for="token" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Security Token</label>
-            <input type="password" id="token" bind:value="{token}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
+            <label class="label">
+                <span>Security Token</span>
+                <input class="input" type="password" bind:value={token} placeholder="Enter your token" />
+            </label>
         </div>
-
-        <button type="submit" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:focus:ring-blue-800">Submit</button>
+        <span>
+            <button type="submit" class="btn variant-filled-primary" disabled={loading}>
+                {#if loading}
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                {:else}
+                    Save
+                {/if}
+            </button>
+            {#if success}
+                <kbd class="kbd text-success-500">Connection Success!</kbd>
+            {/if}
+        </span>
     </form>
 </div>
