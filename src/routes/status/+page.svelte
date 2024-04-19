@@ -4,8 +4,6 @@
     import { serverAddress, securityToken } from '$lib/persistent-store';
     import type { ServerConfig } from '$lib/types';
 
-    import '$lib/styles/rocket.css'
-
     let loading: boolean = true;
     let data: ServerConfig | null = null;
     let error: string | null = null;
