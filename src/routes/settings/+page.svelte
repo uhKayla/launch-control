@@ -1,28 +1,32 @@
 <script lang="ts">
-    import { serverAddress, securityToken, serverConfig } from '$lib/persistent-store';
+    import { invoke } from '@tauri-apps/api';
     import type { ServerConfig } from '$lib/types';
-    import type { Writable } from 'svelte/store';
+    import { serverConfig } from '$lib/persistent-store';
 
     let address: string = '';
     let token: string = '';
-    let errorMessage: string = '';  // Error message state
+    let errorMessage: string = '';
     let loading: boolean = false;
     let success: boolean = false;
 
-    const addressStore: Writable<string> = serverAddress;
-    const tokenStore: Writable<string> = securityToken;
-
-    addressStore.subscribe($serverAddress => address = $serverAddress);
-    tokenStore.subscribe($securityToken => token = $securityToken);
+    async function loadSettings() {
+        try {
+            const result = await invoke('get_server_info');
+            if (result) {
+                address = result[0];
+                token = result[1];
+            }
+        } catch (error) {
+            errorMessage = 'Failed to load settings: ' + error.message;
+        }
+    }
 
     async function handleSubmit(event: SubmitEvent): Promise<void> {
         event.preventDefault();
-        addressStore.set(address);
-        tokenStore.set(token);
-        errorMessage = '';  // reset error message on new submission
-        loading = true; // begin loading
+        loading = true;
 
         try {
+            await invoke('save_server_info', { serverUrl: address, token: token });
             const response = await fetch(address + "/api/v1/server/settings", {
                 method: 'GET',
                 headers: {
@@ -32,21 +36,22 @@
             });
 
             if (!response.ok) {
-                throw new Error('Failed to fetch server settings. Please check your server address and token. (' + response.status + ")");
+                throw new Error(`Failed to fetch server settings. Please check your server address and token. (${response.status})`);
             }
 
             const data: ServerConfig = await response.json();
             serverConfig.set(data);
             success = true;
-        }
-        catch (error: any) {
+        } catch (error: any) {
             console.error('Error making API request:', error);
             errorMessage = error.message || 'An unexpected error occurred.';
-        }
-        finally {
+        } finally {
             loading = false;
         }
     }
+
+    // Load settings on component mount
+    loadSettings();
 </script>
 
 <div>

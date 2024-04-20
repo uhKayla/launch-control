@@ -77,6 +77,10 @@
                 <i class="fas fa-check-circle p-2 scale-150"></i><br>
                 <span>Status</span>
             </AppRailAnchor>
+            <AppRailAnchor href="/chat" selected={$page.url.pathname === '/chat'}>
+                <i class="fas fa-message p-2 scale-150"></i><br>
+                <span>Chat</span>
+            </AppRailAnchor>
             <AppRailAnchor href="/console" selected={$page.url.pathname === '/console'}>
                 <i class="fas fa-terminal p-2 scale-150"></i><br>
                 <span>Console</span>
