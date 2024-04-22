@@ -18,12 +18,9 @@ async fn connect_websocket(state: State<'_, AppState>, window: Window) -> Result
         let token_lock = state.token.lock().unwrap().clone();
         (url_lock, token_lock)
     };
-
     if let (Some(mut base_url), Some(token)) = (url, token) {
-        // Replace http or https with appropriate WebSocket protocols
         base_url = base_url.replace("http://", "ws://").replace("https://", "wss://");
 
-        // Append the specific endpoint to the base URL
         let full_url = format!("{}/api/live/chat", base_url);
 
         let request = Request::builder()

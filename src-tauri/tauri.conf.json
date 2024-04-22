@@ -55,10 +55,10 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 600,
+        "height": 670,
         "resizable": true,
         "title": "Launch Control",
-        "width": 800
+        "width": 1000
       }
     ]
   }

@@ -73,7 +73,7 @@
                 <i class="fas fa-home p-2 scale-150"></i><br>
                 <span>Home</span>
             </AppRailAnchor>
-            <AppRailAnchor href="/status" selected={$page.url.pathname === '/status'}>
+            <AppRailAnchor href="/info" selected={$page.url.pathname === '/info'}>
                 <i class="fas fa-check-circle p-2 scale-150"></i><br>
                 <span>Status</span>
             </AppRailAnchor>

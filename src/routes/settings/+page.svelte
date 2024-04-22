@@ -50,10 +50,8 @@
         }
     }
 
-    // Load settings on component mount
     loadSettings();
 </script>
-
 <div>
     {#if errorMessage}
         <div class="p4">

@@ -3,16 +3,32 @@
     import { browser } from '$app/environment';
     import { serverAddress, securityToken } from '$lib/persistent-store';
     import type { ServerConfig, HeartbeatStatus } from '$lib/types';
+    import {invoke} from "@tauri-apps/api";
 
     let loading: boolean = true;
     let data: ServerConfig | null = null;
     let heartbeatData: HeartbeatStatus | null = null;
     let error: string | null = null;
 
-    async function fetchData(): Promise<void> {
-        const address: string = $serverAddress;
-        const token: string = $securityToken;
+    let address: string = '';
+    let token: string = '';
+    let errorMessage: string = '';
 
+    async function loadSettings() {
+        try {
+            const result = await invoke('get_server_info');
+            if (result) {
+                address = result[0];
+                token = result[1];
+
+                console.log('settings loaded successfully')
+            }
+        } catch (error) {
+            errorMessage = 'Failed to load settings: ' + error.message;
+        }
+    }
+
+    async function fetchData(): Promise<void> {
         if (browser) {
             try {
                 const response: Response = await fetch(`${address}/api/v1/server/settings`, {
@@ -72,6 +88,7 @@
     let intervalId: ReturnType<typeof setInterval>;
 
     onMount(() => {
+        loadSettings();
         fetchData();
         fetchHeartbeat();
         intervalId = setInterval(fetchHeartbeat, 1000);  // Set interval to fetch heartbeat every second
@@ -90,56 +107,56 @@
     {:else}
         <div class="grid grid-cols-3 gap-4 p-4">
             {#if data != null && heartbeatData != null}
-            <div class="block card card-hover p-4">
-                Server is online!
-            </div>
-            <div class="block card card-hover col-span-2 row-span-3 p-4">
-                {#if data.serverName != null}
-                    <div class="text-2xl">{data.serverName}</div>
-                    {:else}
-                    <div class="text-2xl">Not connected</div>
-                {/if}
-                <hr>
-                <div class="flex justify-between">
-                    <div>Map Name:</div>
-                    {#if data.mapName != null}
-                        <div>{data.mapName}</div>
-                    {:else}
-                        <div>Not Connected</div>
-                    {/if}
+                <div class="block card card-hover p-4">
+                    Server is online!
                 </div>
-                <hr>
-                <div class="flex justify-between">
-                    <div>Players Online:</div>
-                    {#if heartbeatData.memberCount != null && data.memberLimit != null}
-                        <div>{heartbeatData.memberCount}/{data.memberLimit}</div>
+                <div class="block card card-hover col-span-2 row-span-3 p-4">
+                    {#if data.serverName != null}
+                        <div class="text-2xl">{data.serverName}</div>
                     {:else}
-                        <div>Not Connected</div>
+                        <div class="text-2xl">Not connected</div>
                     {/if}
+                    <hr>
+                    <div class="flex justify-between">
+                        <div>Map Name:</div>
+                        {#if data.mapName != null}
+                            <div>{data.mapName}</div>
+                        {:else}
+                            <div>Not Connected</div>
+                        {/if}
+                    </div>
+                    <hr>
+                    <div class="flex justify-between">
+                        <div>Players Online:</div>
+                        {#if heartbeatData.memberCount != null && data.memberLimit != null}
+                            <div>{heartbeatData.memberCount}/{data.memberLimit}</div>
+                        {:else}
+                            <div>Not Connected</div>
+                        {/if}
+                    </div>
+                    <hr>
+                    <div class="flex justify-between">
+                        <div>Description:</div>
+                        {#if data.serverDescription != null}
+                            <div>{data.serverDescription}</div>
+                        {:else}
+                            <div>Not Connected</div>
+                        {/if}
+                    </div>
+                    <hr>
+                    <div class="flex justify-between">
+                        <div>Uptime:</div>
+                        {#if heartbeatData.uptime != null}
+                            <div>{heartbeatData.uptime}</div>
+                        {:else}
+                            <div>Not Connected</div>
+                        {/if}
+                    </div>
+                    <hr>
                 </div>
-                <hr>
-                <div class="flex justify-between">
-                    <div>Description:</div>
-                    {#if data.serverDescription != null}
-                        <div>{data.serverDescription}</div>
-                    {:else}
-                        <div>Not Connected</div>
-                    {/if}
+                <div class="card card-hover p-4 row-span-2 min-h-72 flex justify-center items-center">
+                    <i class="fas fa-group-arrows-rotate fa-spin fa-5x"/>
                 </div>
-                <hr>
-                <div class="flex justify-between">
-                    <div>Uptime:</div>
-                    {#if heartbeatData.uptime != null}
-                        <div>{heartbeatData.uptime}</div>
-                    {:else}
-                        <div>Not Connected</div>
-                    {/if}
-                </div>
-                <hr>
-            </div>
-            <div class="card card-hover p-4 row-span-2 min-h-72 flex justify-center items-center">
-                <i class="fas fa-group-arrows-rotate fa-spin fa-5x"/>
-            </div>
             {/if}
         </div>
     {/if}
